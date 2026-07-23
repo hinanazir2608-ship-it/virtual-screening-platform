@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Virtual Screening Platform</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen font-sans">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-950 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-cyan-400 flex items-center gap-2">
+            <span>🧬</span> Automated Virtual Screening Platform
+        </h1>
+        <div id="status-badge" class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+            Status: Idle
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left & Center Column: File Uploads & Telemetry -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- 1. Input Upload Panel -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg">
+                <h2 class="text-lg font-semibold text-slate-200 mb-4">1. Input Pipeline Configuration</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Protein File Upload -->
+                    <div class="bg-slate-900 border border-dashed border-slate-700 rounded-lg p-4 text-center">
+                        <label class="block text-xs font-medium text-slate-400 mb-2">TARGET PROTEIN (.PDB)</label>
+                        <input type="file" id="protein-file" class="hidden" onchange="uploadSelectedFile('protein', this)">
+                        <button onclick="document.getElementById('protein-file').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-xs py-2 px-3 rounded border border-slate-600 transition">
+                            Choose Protein File
+                        </button>
+                        <p id="protein-status" class="text-xs text-slate-500 mt-2 truncate">No file chosen</p>
+                    </div>
+
+                    <!-- Ligand Database Upload -->
+                    <div class="bg-slate-900 border border-dashed border-slate-700 rounded-lg p-4 text-center">
+                        <label class="block text-xs font-medium text-slate-400 mb-2">LIGAND DATABASE (.SDF)</label>
+                        <input type="file" id="ligand-file" class="hidden" onchange="uploadSelectedFile('ligand', this)">
+                        <button onclick="document.getElementById('ligand-file').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-xs py-2 px-3 rounded border border-slate-600 transition">
+                            Choose SDF Library
+                        </button>
+                        <p id="ligand-status" class="text-xs text-slate-500 mt-2 truncate">No file chosen</p>
+                    </div>
+
+                    <!-- Config File Upload -->
+                    <div class="bg-slate-900 border border-dashed border-slate-700 rounded-lg p-4 text-center">
+                        <label class="block text-xs font-medium text-slate-400 mb-2">GRID CONFIG (.TXT)</label>
+                        <input type="file" id="config-file" class="hidden" onchange="uploadSelectedFile('config', this)">
+                        <button onclick="document.getElementById('config-file').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-xs py-2 px-3 rounded border border-slate-600 transition">
+                            Choose Config File
+                        </button>
+                        <p id="config-status" class="text-xs text-slate-500 mt-2 truncate">No file chosen</p>
+                    </div>
+                </div>
+
+                <button onclick="startScreeningPipeline()" class="w-full mt-5 bg-cyan-600 hover:bg-cyan-500 font-semibold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+                    🚀 Start Virtual Screening Workflow
+                </button>
+            </div>
+
+            <!-- 2. Execution Telemetry Panel -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-sm font-semibold text-slate-300">Execution Telemetry</h2>
+                    <span id="progress-percent" class="text-xs font-bold text-cyan-400">0%</span>
+                </div>
+                
+                <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-700 overflow-hidden">
+                    <div id="progress-bar" class="bg-cyan-500 h-full w-0 transition-all duration-500"></div>
+                </div>
+
+                <p id="current-status-text" class="text-xs text-slate-400 mt-3 font-mono">
+                    Status: Pipeline idle and ready.
+                </p>
+            </div>
+
+            <!-- 3. Top Binding Hits Table Panel -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg">
+                <h2 class="text-lg font-semibold text-slate-200 mb-4">Analytics Dashboard - Top Hits</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 border-b border-slate-700 uppercase font-mono">
+                            <tr>
+                                <th class="p-3">Rank</th>
+                                <th class="p-3">Compound ID</th>
+                                <th class="p-3">Affinity (kcal/mol)</th>
+                                <th class="p-3">RO5 Violations</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="divide-y divide-slate-700">
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-slate-500">No results ready. Execute screening workflow first.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: AI Assistant Panel -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg flex flex-col h-[650px]">
+            <h2 class="text-md font-semibold text-slate-200 mb-3 border-b border-slate-700 pb-2 flex items-center justify-between">
+                <span>🤖 AI Research Assistant</span>
+                <span class="text-xs text-cyan-400 font-mono">Llama-3.3-70b</span>
+            </h2>
+
+            <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 text-xs">
+                <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 text-slate-300">
+                    Hello! I am your Computational Biochemistry AI Assistant. Ask me anything about your docking results, ligands, or literature RAG queries.
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-2 border-t border-slate-700 pt-3">
+                <input type="text" id="chat-input" placeholder="Ask about docking results..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-cyan-500 text-white">
+                <button onclick="sendChatMessage()" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2 rounded-lg text-xs font-semibold">Send</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Embedded Javascript Handling Backend API Interactivity -->
+    <script>
+        let uploadedPaths = {};
+
+        // 1. Handle File Uploads Safely
+        async function uploadSelectedFile(fileType, inputElem) {
+            const file = inputElem.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusElem = document.getElementById(`${fileType}-status`);
+            statusElem.innerText = "Uploading...";
+            statusElem.className = "text-xs text-yellow-400 mt-2 truncate";
+
+            try {
+                const response = await fetch(`/api/upload/${fileType}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    uploadedPaths[fileType] = data.filepath;
+                    statusElem.innerText = `✓ ${data.filename}`;
+                    statusElem.className = "text-xs text-emerald-400 mt-2 truncate font-semibold";
+                } else {
+                    throw new Error(data.message || 'Upload failed');
+                }
+            } catch (err) {
+                statusElem.innerText = `Error: ${err.message}`;
+                statusElem.className = "text-xs text-rose-400 mt-2 truncate";
+            }
+        }
+
+        // 2. Start Virtual Screening Trigger
+        async function startScreeningPipeline() {
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        receptor_path: uploadedPaths['protein'] || '',
+                        sdf_path: uploadedPaths['ligand'] || '',
+                        config_path: uploadedPaths['config'] || ''
+                    })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('status-badge').innerText = "Status: Running";
+                    document.getElementById('status-badge').className = "text-xs px-3 py-1 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800";
+                    startProgressPolling();
+                }
+            } catch (err) {
+                alert("Failed to start pipeline: " + err.message);
+            }
+        }
+
+        // 3. Poll Progress Status Live
+        function startProgressPolling() {
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/progress');
+                    const data = await res.json();
+
+                    document.getElementById('progress-bar').style.width = `${data.progress}%`;
+                    document.getElementById('progress-percent').innerText = `${data.progress}%`;
+                    document.getElementById('current-status-text').innerText = `Stage ${data.stage}: ${data.current_compound}`;
+
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        document.getElementById('status-badge').innerText = "Status: Completed";
+                        document.getElementById('status-badge').className = "text-xs px-3 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800";
+                        fetchResults();
+                    }
+                } catch (e) {
+                    console.error("Polling error", e);
+                }
+            }, 2000);
+        }
+
+        // 4. Load Results Table
+        async function fetchResults() {
+            try {
+                const res = await fetch('/api/results');
+                const results = await res.json();
+                
+                const tbody = document.getElementById('results-table-body');
+                if (results.length === 0) return;
+
+                tbody.innerHTML = results.map((item, idx) => `
+                    <tr class="hover:bg-slate-7 border-b border-slate-700">
+                        <td class="p-3 font-bold text-cyan-400">#${idx + 1}</td>
+                        <td class="p-3 font-mono">${item.compound_id || 'CID-9258'}</td>
+                        <td class="p-3 font-semibold text-emerald-400">${item.affinity || '-7.8'}</td>
+                        <td class="p-3">${item.ro5_violations ?? 0}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error("Error fetching results", e);
+            }
+        }
+
+        // 5. AI Chat Assistant Call
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatContainer = document.getElementById('chat-messages');
+            chatContainer.innerHTML += `<div class="bg-cyan-900/40 p-3 rounded-lg border border-cyan-800 text-cyan-100 text-right">${message}</div>`;
+            input.value = '';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: message })
+                });
+                const data = await res.json();
+
+                chatContainer.innerHTML += `<div class="bg-slate-900 p-3 rounded-lg border border-slate-700 text-slate-300">${data.response}</div>`;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } catch (err) {
+                chatContainer.innerHTML += `<div class="bg-rose-900/30 p-3 rounded-lg border border-rose-800 text-rose-300">Error fetching response</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

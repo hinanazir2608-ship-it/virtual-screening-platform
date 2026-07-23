@@ -1,0 +1,23 @@
+# Flask Web Framework & WSGI
+Flask>=3.0.0
+Werkzeug>=3.0.1
+
+# Computational Chemistry & Molecular Modeling
+rdkit>=2023.9.1
+pandas>=2.1.0
+numpy>=1.26.0
+
+# Document & Report Generation
+python-docx>=1.1.0
+
+# Vector Embeddings, RAG & LLM Integration
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-huggingface>=0.0.1
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.2
+groq>=0.4.0
+
+# Environment Management & System Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
